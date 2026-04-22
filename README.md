@@ -1,8 +1,9 @@
 # blockchain wallet
 
-a simple python script for managing a crypto wallet. handles keys, addresses, and encryption.
+a simple python api for managing a crypto wallet. handles keys, addresses, and encryption.
 
 ## features
+- **api**: built with fastapi for quick wallet creation
 - **keys**: uses secp256k1 (industry standard)
 - **addresses**: standard sha256 + ripemd160 hashing
 - **security**: uses aes-gcm to encrypt your keys with a password
@@ -10,10 +11,14 @@ a simple python script for managing a crypto wallet. handles keys, addresses, an
 ## project structure
 ```text
 BlockChain_Wallet/
+├── models/
+│   └── wallet_model.py  # request models
 ├── wallet/
-│   └── crypto.py    # the core logic
+│   ├── crypto.py        # crypto logic
+│   └── service.py       # wallet services
+├── main.py              # api entry point
 ├── .gitignore       
-├── requirements.txt # pip libs
+├── requirements.txt     # dependencies
 └── README.md        
 ```
 
@@ -29,15 +34,17 @@ BlockChain_Wallet/
     pip install -r requirements.txt
     ```
 
-## usage
-```python
-from wallet.crypto import generate_key_pair, generate_address
+## running the api
+```bash
+uvicorn main:app --reload
+```
 
-# create a new wallet
-priv, pub = generate_key_pair()
-addr = generate_address(pub)
-
-print(f"Address: {addr}")
+## api usage
+once the server is running, you can create a wallet:
+```bash
+curl -X POST "http://127.0.0.1:8000/wallet/create" \
+     -H "Content-Type: application/json" \
+     -d '{"password": "your_secure_password"}'
 ```
 
 ## license
