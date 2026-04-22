@@ -1,26 +1,37 @@
 # BlockChain_Wallet
 
-a decentralized p2p blockchain implementation with a compact, efficient structure.
+a full-stack decentralized blockchain wallet with p2p networking, proof-of-work mining, and a modern react dashboard.
 
 ## features
-- **hashing**: fixed reproducible sha-256 block hashing
-- **consensus**: restored longest-chain rule for node synchronization
-- **broadcast**: loop-prevention logic for decentralized transaction sharing
-- **ui**: polished single-page react interface for wallet and mining
+- **wallet**: ecdsa key generation, sha-256 address derivation, aes-gcm encrypted key storage
+- **transactions**: signed transactions with ecdsa, broadcast loop prevention, mempool management
+- **blockchain**: sha-256 proof-of-work, genesis block, chain validation
+- **consensus**: longest-chain rule across p2p nodes
+- **balance tracking**: real-time balance and full transaction history per address
+- **frontend**: dark glassmorphism 5-page react dashboard
 
 ## project structure
 ```text
 BlockChain_Wallet/
 ├── backend/
 │   ├── app/
-│   │   ├── blockchain/ # blocks and chain logic
-│   │   ├── network/    # p2p and consensus
-│   │   ├── wallet/     # keys and crypto
-│   │   └── main.py     # node api
+│   │   ├── blockchain/  # block + chain logic
+│   │   ├── network/     # p2p node + consensus
+│   │   ├── transactions/# signing + verification
+│   │   ├── wallet/      # crypto primitives
+│   │   └── main.py      # fastapi node api
+│   ├── requirements.txt
 │   └── Dockerfile
 ├── frontend/
-│   ├── src/            # react source code
+│   ├── public/
+│   ├── src/
+│   │   ├── components/  # sidebar
+│   │   ├── pages/       # dashboard, send, explorer, mine, network
+│   │   ├── App.js
+│   │   ├── api.js
+│   │   └── index.css    # dark design system
 │   └── package.json
+├── docker-compose.yml
 └── README.md
 ```
 
@@ -40,14 +51,25 @@ npm install
 npm start
 ```
 
-## compact api
-- `POST /wallet`: create a new encrypted wallet
-- `POST /tx`: prepare a signed transaction
-- `POST /tx/add`: add and broadcast a transaction
-- `GET /mine/{addr}`: mine a block and earn rewards
-- `GET /chain`: view the full blockchain
-- `POST /node/add`: register a peer node
-- `GET /resolve`: sync chain with the network (consensus)
+## api endpoints
+| method | route | description |
+|--------|-------|-------------|
+| POST | `/wallet` | create encrypted wallet |
+| GET | `/balance/{addr}` | get address balance |
+| GET | `/history/{addr}` | transaction history |
+| POST | `/tx` | create signed transaction |
+| POST | `/tx/add` | broadcast transaction |
+| GET | `/mine/{addr}` | mine a block |
+| GET | `/chain` | full blockchain |
+| GET | `/mempool` | pending transactions |
+| GET | `/stats` | chain statistics |
+| POST | `/node/add` | register peer node |
+| GET | `/resolve` | run consensus |
+
+## docker (3-node network)
+```bash
+docker-compose up --build
+```
 
 ## license
 MIT
