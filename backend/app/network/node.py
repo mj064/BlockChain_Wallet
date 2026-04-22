@@ -1,63 +1,34 @@
 import requests
-
+from app.blockchain.block import Block
 
 class Node:
     def __init__(self):
-        self.nodes = set()
+        self.nodes=set()
 
-    # register a new node
-    def register_node(self, address: str):
-        self.nodes.add(address)
+    def add(self,url): self.nodes.add(url)
 
-    # broadcast a transaction to all peers
-    def broadcast_transaction(self, tx):
-        for node in self.nodes:
+    def broadcast(self,tx):
+        for n in self.nodes:
+            try: requests.post(n+"/tx/add",json=tx)
+            except: pass
+
+    def resolve(self, bc):
+        new_chain = None
+        max_len = len(bc.chain)
+        for n in self.nodes:
             try:
-                requests.post(f"{node}/transaction/add", json=tx)
-            except:
-                pass
-
-    # consensus: resolve conflicts between chains
-    def resolve_conflicts(self, blockchain):
-        longest_chain = None
-        max_length = len(blockchain.chain)
-
-        for node in self.nodes:
-            try:
-                response = requests.get(f"{node}/chain")
-                data = response.json()
-
-                length = data["length"]
-                chain = data["chain"]
-
-                if length > max_length:
-                    max_length = length
-                    longest_chain = chain
-            except:
-                pass
-
-        if longest_chain:
-            blockchain.chain = self.rebuild_chain(longest_chain)
+                r = requests.get(n+"/chain").json()
+                if len(r) > max_len:
+                    max_len = len(r)
+                    new_chain = r
+            except: pass
+        if new_chain:
+            bc.chain = [self.rebuild(b) for b in new_chain]
             return True
-
         return False
 
-    # helper to rebuild block objects from json
-    def rebuild_chain(self, chain_data):
-        from blockchain.block import Block
-
-        new_chain = []
-
-        for block_data in chain_data:
-            block = Block(
-                block_data["index"],
-                block_data["previous_hash"],
-                block_data["transactions"],
-                block_data["nonce"]
-            )
-            block.hash = block_data["hash"]
-            block.timestamp = block_data["timestamp"]
-
-            new_chain.append(block)
-
-        return new_chain
+    def rebuild(self, data):
+        b = Block(data["index"], data["previous_hash"], data["transactions"], data["nonce"])
+        b.timestamp = data["timestamp"]
+        b.hash = data["hash"]
+        return b

@@ -1,71 +1,53 @@
 # BlockChain_Wallet
 
-a decentralized p2p blockchain implementation with a full web interface.
+a decentralized p2p blockchain implementation with a compact, efficient structure.
 
 ## features
-- **blockchain**: linked blocks with sha-256 hashing and proof of work
-- **mining**: cpu mining with adjustable difficulty and block rewards
-- **p2p networking**: node registration and transaction broadcasting
-- **consensus**: resolve conflicts using the longest-chain rule
-- **wallet**: secure ecdsa keys, address derivation, and encrypted storage
-- **ui**: modern react dashboard for wallet management and chain exploring
+- **hashing**: fixed reproducible sha-256 block hashing
+- **consensus**: restored longest-chain rule for node synchronization
+- **broadcast**: loop-prevention logic for decentralized transaction sharing
+- **ui**: polished single-page react interface for wallet and mining
 
 ## project structure
 ```text
 BlockChain_Wallet/
 ├── backend/
 │   ├── app/
-│   │   ├── blockchain/
-│   │   ├── models/
-│   │   ├── network/
-│   │   ├── transactions/
-│   │   ├── wallet/
-│   │   └── main.py
-│   ├── requirements.txt
+│   │   ├── blockchain/ # blocks and chain logic
+│   │   ├── network/    # p2p and consensus
+│   │   ├── wallet/     # keys and crypto
+│   │   └── main.py     # node api
 │   └── Dockerfile
 ├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── App.js
-│   │   └── api.js
-│   ├── package.json
-│   └── public/
-├── docker-compose.yml
+│   ├── src/            # react source code
+│   └── package.json
 └── README.md
 ```
 
 ## setup
 
 ### backend
-1.  **install deps**:
-    ```bash
-    cd backend
-    pip install -r requirements.txt
-    ```
-
-2.  **run node**:
-    ```bash
-    uvicorn app.main:app --reload
-    ```
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
 
 ### frontend
-1.  **install deps**:
-    ```bash
-    cd frontend
-    npm install
-    ```
-
-2.  **run ui**:
-    ```bash
-    npm start
-    ```
-
-## docker
-run a 3-node network locally:
 ```bash
-docker-compose up --build
+cd frontend
+npm install
+npm start
 ```
+
+## compact api
+- `POST /wallet`: create a new encrypted wallet
+- `POST /tx`: prepare a signed transaction
+- `POST /tx/add`: add and broadcast a transaction
+- `GET /mine/{addr}`: mine a block and earn rewards
+- `GET /chain`: view the full blockchain
+- `POST /node/add`: register a peer node
+- `GET /resolve`: sync chain with the network (consensus)
 
 ## license
 MIT

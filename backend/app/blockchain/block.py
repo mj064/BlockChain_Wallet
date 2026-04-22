@@ -1,24 +1,15 @@
-import hashlib
-import json
-import time
-
+import hashlib, json, time
 
 class Block:
-    def __init__(self, index, previous_hash, transactions, nonce=0):
-        self.index = index
-        self.timestamp = time.time()
-        self.transactions = transactions
-        self.previous_hash = previous_hash
-        self.nonce = nonce
-        self.hash = self.calculate_hash()
+    def __init__(self, i, prev, txs, nonce=0):
+        self.index=i
+        self.timestamp=time.time()
+        self.transactions=txs
+        self.previous_hash=prev
+        self.nonce=nonce
+        self.hash=self.calc()
 
-    def calculate_hash(self):
-        block_string = json.dumps({
-            "index": self.index,
-            "timestamp": self.timestamp,
-            "transactions": self.transactions,
-            "previous_hash": self.previous_hash,
-            "nonce": self.nonce
-        }, sort_keys=True)
-
-        return hashlib.sha256(block_string.encode()).hexdigest()
+    def calc(self):
+        d = self.__dict__.copy()
+        if "hash" in d: del d["hash"]
+        return hashlib.sha256(json.dumps(d, sort_keys=True).encode()).hexdigest()

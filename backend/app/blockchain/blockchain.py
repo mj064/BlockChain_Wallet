@@ -1,62 +1,29 @@
-from blockchain.block import Block
-
+from app.blockchain.block import Block
 
 class Blockchain:
     def __init__(self):
-        self.chain = []
-        self.difficulty = 4
-        self.pending_transactions = []
-        self.create_genesis_block()
+        self.chain=[]
+        self.pending=[]
+        self.diff=4
+        self.chain.append(Block(0,"0",[]))
 
-    # genesis block
-    def create_genesis_block(self):
+    def last(self): return self.chain[-1]
 
-    def get_latest_block(self):
-        return self.chain[-1]
+    def add_tx(self,tx): self.pending.append(tx)
 
-    # add transaction to mempool
-    def add_transaction(self, tx):
-        self.pending_transactions.append(tx)
+    def mine(self,miner):
+        self.pending.append({"sender":"SYS","receiver":miner,"amount":50})
+        b=Block(len(self.chain),self.last().hash,self.pending)
+        while not b.hash.startswith("0"*self.diff):
+            b.nonce+=1
+            b.hash=b.calc()
+        self.chain.append(b)
+        self.pending=[]
+        return b
 
-    # mining (proof of work)
-    def mine_block(self, miner_address):
-        reward_tx = {
-            "sender": "SYSTEM",
-            "receiver": miner_address,
-            "amount": 50
-        }
-
-        self.pending_transactions.append(reward_tx)
-
-        new_block = Block(
-            len(self.chain),
-            self.get_latest_block().hash,
-            self.pending_transactions
-        )
-
-        self.proof_of_work(new_block)
-
-        self.chain.append(new_block)
-
-        self.pending_transactions = []
-
-        return new_block
-
-    def proof_of_work(self, block):
-        while not block.hash.startswith("0" * self.difficulty):
-            block.nonce += 1
-            block.hash = block.calculate_hash()
-
-    # validate the chain
-    def is_chain_valid(self):
-        for i in range(1, len(self.chain)):
-            current = self.chain[i]
-            previous = self.chain[i - 1]
-
-            if current.hash != current.calculate_hash():
+    def valid(self):
+        for i in range(1,len(self.chain)):
+            c=self.chain[i];p=self.chain[i-1]
+            if c.hash!=c.calc() or c.previous_hash!=p.hash:
                 return False
-
-            if current.previous_hash != previous.hash:
-                return False
-
         return True

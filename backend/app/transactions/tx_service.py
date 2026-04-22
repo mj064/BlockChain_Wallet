@@ -1,48 +1,21 @@
-import time
-import json
-from wallet.crypto import (
-    decrypt_private_key,
-    sign_transaction,
-    verify_signature
-)
+import json, time
+from app.wallet.crypto import decrypt_private_key, sign, verify
 
-
-# decrypt key and sign the transaction
-def create_transaction(data):
-    private_key = decrypt_private_key(
-        data.encrypted_private_key,
-        data.password
-    )
-
-    # prepare transaction data
+def create_tx(data):
+    pk = decrypt_private_key(data["enc_pk"], data["password"])
     tx = {
-        "sender": data.sender_public_key,
-        "receiver": data.receiver_address,
-        "amount": data.amount,
+        "sender": data["pub"],
+        "receiver": data["to"],
+        "amount": data["amt"],
         "timestamp": time.time()
     }
-
-    tx_string = json.dumps(tx, sort_keys=True)
-
-    # sign the payload
-    signature = sign_transaction(private_key, tx_string)
-
-    tx["signature"] = signature
-
+    msg = json.dumps(tx, sort_keys=True)
+    tx["sig"] = sign(pk, msg)
     return tx
 
-
-# verify if a transaction is valid
-def validate_transaction(tx):
-    signature = tx["signature"]
-
-    tx_copy = tx.copy()
-    del tx_copy["signature"]
-
-    tx_string = json.dumps(tx_copy, sort_keys=True)
-
-    return verify_signature(
-        tx["sender"],
-        tx_string,
-        signature
-    )
+def verify_tx(tx):
+    sig = tx["sig"]
+    t = tx.copy()
+    del t["sig"]
+    msg = json.dumps(t, sort_keys=True)
+    return verify(tx["sender"], msg, sig)
