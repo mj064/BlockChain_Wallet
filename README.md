@@ -1,68 +1,76 @@
 # blockchain wallet
 
-a simple python api for managing a crypto wallet. handles keys, addresses, and transaction signing.
+a decentralized p2p blockchain implementation in python. features a full node with mining, transaction broadcasting, and consensus.
 
 ## features
-- **api**: built with fastapi for wallet and transaction handling
-- **keys**: uses secp256k1 (industry standard)
-- **addresses**: standard sha256 + ripemd160 hashing
-- **security**: uses aes-gcm to encrypt your keys with a password
-- **signing**: ecdsa-based transaction signing and verification
+- **blockchain**: linked blocks with sha-256 hashing and proof of work
+- **mining**: cpu mining with adjustable difficulty and block rewards
+- **p2p networking**: node registration and transaction broadcasting
+- **consensus**: resolve conflicts using the longest-chain rule
+- **wallet**: secure ecdsa keys, address derivation, and encrypted storage
+- **api**: full fastapi interface for interacting with the node
 
 ## project structure
 ```text
 BlockChain_Wallet/
+├── blockchain/
+│   ├── block.py         # block data structure
+│   └── blockchain.py    # chain logic and mining
 ├── models/
-│   └── wallet_model.py  # request models
+│   └── wallet_model.py  # pydantic models
+├── network/
+│   └── node.py          # p2p networking logic
 ├── transactions/
-│   ├── tx_model.py      # transaction models
-│   └── tx_service.py    # transaction logic
+│   ├── tx_model.py      
+│   └── tx_service.py    
 ├── wallet/
-│   ├── crypto.py        # crypto logic
-│   └── service.py       # wallet services
-├── main.py              # api entry point
-├── .gitignore       
-├── requirements.txt     # dependencies
+│   ├── crypto.py        
+│   └── service.py       
+├── main.py              # node entry point
+├── requirements.txt     
 └── README.md        
 ```
 
 ## setup
-1.  **clone it**:
+1.  **clone and install**:
     ```bash
     git clone https://github.com/mj064/BlockChain_Wallet.git
     cd BlockChain_Wallet
-    ```
-
-2.  **install deps**:
-    ```bash
     pip install -r requirements.txt
     ```
 
-## running the api
-```bash
-uvicorn main:app --reload
-```
+2.  **run a node**:
+    ```bash
+    uvicorn main:app --reload --port 8000
+    ```
 
 ## api usage
 
-### create a wallet
+### mining
+mine pending transactions and earn rewards:
 ```bash
-curl -X POST "http://127.0.0.1:8000/wallet/create" \
-     -H "Content-Type: application/json" \
-     -d '{"password": "your_secure_password"}'
+curl http://127.0.0.1:8000/mine/your_wallet_address
 ```
 
-### create a transaction
+### p2p networking
+register a peer node:
 ```bash
-curl -X POST "http://127.0.0.1:8000/transaction/create" \
+curl -X POST "http://127.0.0.1:8000/node/register" \
      -H "Content-Type: application/json" \
-     -d '{
-           "sender_public_key": "...",
-           "receiver_address": "...",
-           "amount": 10.5,
-           "password": "your_secure_password",
-           "encrypted_private_key": {...}
-         }'
+     -d '"http://127.0.0.1:8001"'
+```
+
+sync your chain with the network (consensus):
+```bash
+curl http://127.0.0.1:8000/nodes/resolve
+```
+
+### transactions
+broadcast a transaction to the network:
+```bash
+curl -X POST "http://127.0.0.1:8000/transaction/broadcast" \
+     -H "Content-Type: application/json" \
+     -d '{...}'
 ```
 
 ## license
