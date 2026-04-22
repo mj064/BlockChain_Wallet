@@ -6,7 +6,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 
-# Generate SECP256k1 key pair
+# setup keys using elliptic curve
 def generate_key_pair():
     private_key = SigningKey.generate(curve=SECP256k1)
     public_key = private_key.get_verifying_key()
@@ -14,7 +14,7 @@ def generate_key_pair():
     return private_key.to_string().hex(), public_key.to_string().hex()
 
 
-# Derive wallet address from public key
+# get a wallet address from public key
 def generate_address(public_key_hex):
     public_bytes = bytes.fromhex(public_key_hex)
     sha = hashlib.sha256(public_bytes).digest()
@@ -23,7 +23,7 @@ def generate_address(public_key_hex):
     return ripemd
 
 
-# Derive encryption key from password using PBKDF2
+# derive a key for encryption
 def derive_key(password: str, salt: bytes):
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
@@ -34,7 +34,7 @@ def derive_key(password: str, salt: bytes):
     return kdf.derive(password.encode())
 
 
-# Encrypt private key using AES-GCM
+# encrypt private key with password
 def encrypt_private_key(private_key_hex: str, password: str):
     salt = os.urandom(16)
     key = derive_key(password, salt)
@@ -51,7 +51,7 @@ def encrypt_private_key(private_key_hex: str, password: str):
     }
 
 
-# Decrypt private key using AES-GCM
+# decrypt using the saved data
 def decrypt_private_key(enc_data, password: str):
     salt = bytes.fromhex(enc_data["salt"])
     nonce = bytes.fromhex(enc_data["nonce"])

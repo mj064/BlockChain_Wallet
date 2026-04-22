@@ -1,49 +1,44 @@
-# BlockChain Wallet
+# blockchain wallet
 
-A lightweight Python-based blockchain wallet core implementing secure key management, address derivation, and encrypted storage.
+a simple python script for managing a crypto wallet. handles keys, addresses, and encryption.
 
-## Features
+## features
+- **keys**: uses secp256k1 (industry standard)
+- **addresses**: standard sha256 + ripemd160 hashing
+- **security**: uses aes-gcm to encrypt your keys with a password
 
-- **Asymmetric Cryptography**: Uses the SECP256k1 elliptic curve (industry standard) for secure key pair generation.
-- **Address Derivation**: Implements standard SHA-256 and RIPEMD-160 hashing for generating wallet addresses.
-- **Secure Persistence**: Employs PBKDF2 for key derivation and AES-GCM (Authenticated Encryption) to safely encrypt private keys with a password.
-
-## Project Structure
-
+## project structure
 ```text
 BlockChain_Wallet/
 ├── wallet/
-│   └── crypto.py    # Core cryptographic primitives
-├── .gitignore       # Git exclusion rules
-├── requirements.txt # Project dependencies
-└── README.md        # Documentation
+│   └── crypto.py    # the core logic
+├── .gitignore       
+├── requirements.txt # pip libs
+└── README.md        
 ```
 
-## Installation
-
-1.  **Clone the repository**:
+## setup
+1.  **clone it**:
     ```bash
     git clone https://github.com/mj064/BlockChain_Wallet.git
     cd BlockChain_Wallet
     ```
 
-2.  **Install dependencies**:
+2.  **install deps**:
     ```bash
     pip install -r requirements.txt
     ```
 
-## Quick Start
-
+## usage
 ```python
 from wallet.crypto import generate_key_pair, generate_address
 
-# Generate a new identity
-private_key, public_key = generate_key_pair()
-address = generate_address(public_key)
+# create a new wallet
+priv, pub = generate_key_pair()
+addr = generate_address(pub)
 
-print(f"Address: {address}")
+print(f"Address: {addr}")
 ```
 
-## License
-
-This project is open-source and available under the MIT License.
+## license
+MIT
