@@ -1,0 +1,17 @@
+version: "3"
+
+services:
+  node1:
+    build: ./backend
+    ports:
+      - "8000:8000"
+
+  node2:
+    build: ./backend
+    ports:
+      - "8001:8000"
+
+  node3:
+    build: ./backend
+    ports:
+      - "8002:8000"
