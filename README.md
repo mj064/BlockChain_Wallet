@@ -1,4 +1,4 @@
-# securechain
+# BlockChain_Wallet
 
 a decentralized p2p blockchain implementation with a full web interface.
 
@@ -12,7 +12,7 @@ a decentralized p2p blockchain implementation with a full web interface.
 
 ## project structure
 ```text
-securechain/
+BlockChain_Wallet/
 ├── backend/
 │   ├── app/
 │   │   ├── blockchain/
