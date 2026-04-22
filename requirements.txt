@@ -1,2 +1,5 @@
 ecdsa
 cryptography
+fastapi
+uvicorn
+pydantic
