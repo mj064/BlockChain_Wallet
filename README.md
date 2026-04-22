@@ -13,6 +13,9 @@ a simple python api for managing a crypto wallet. handles keys, addresses, and e
 BlockChain_Wallet/
 ├── models/
 │   └── wallet_model.py  # request models
+├── transactions/
+│   ├── tx_model.py      # transaction models
+│   └── tx_service.py    # transaction logic
 ├── wallet/
 │   ├── crypto.py        # crypto logic
 │   └── service.py       # wallet services

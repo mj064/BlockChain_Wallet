@@ -1,6 +1,6 @@
 import os
 import hashlib
-from ecdsa import SigningKey, SECP256k1
+from ecdsa import SigningKey, VerifyingKey, SECP256k1
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -63,3 +63,20 @@ def decrypt_private_key(enc_data, password: str):
     decrypted = aesgcm.decrypt(nonce, ciphertext, None)
 
     return decrypted.decode()
+
+# Sign Transaction
+def sign_transaction(private_key_hex: str, message: str):
+    sk = SigningKey.from_string(bytes.fromhex(private_key_hex), curve=SECP256k1)
+    signature = sk.sign(message.encode())
+
+    return signature.hex()
+
+
+# Verify Signature
+def verify_signature(public_key_hex: str, message: str, signature_hex: str):
+    vk = VerifyingKey.from_string(bytes.fromhex(public_key_hex), curve=SECP256k1)
+
+    try:
+        return vk.verify(bytes.fromhex(signature_hex), message.encode())
+    except:
+        return False

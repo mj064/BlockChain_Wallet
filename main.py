@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from wallet.service import create_wallet
 from models.wallet_model import WalletCreateRequest
+from transactions.tx_model import TransactionRequest
+from transactions.tx_service import create_transaction, validate_transaction
 
 app = FastAPI()
 
