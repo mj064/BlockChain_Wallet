@@ -14,6 +14,22 @@ def generate_key_pair():
     return private_key.to_string().hex(), public_key.to_string().hex()
 
 
+# sign a message
+def sign_transaction(private_key_hex, message):
+    private_key = SigningKey.from_string(bytes.fromhex(private_key_hex), curve=SECP256k1)
+    signature = private_key.sign(message.encode())
+    return signature.hex()
+
+
+# verify a signature
+def verify_signature(public_key_hex, message, signature_hex):
+    public_key = VerifyingKey.from_string(bytes.fromhex(public_key_hex), curve=SECP256k1)
+    try:
+        return public_key.verify(bytes.fromhex(signature_hex), message.encode())
+    except:
+        return False
+
+
 # get a wallet address from public key
 def generate_address(public_key_hex):
     public_bytes = bytes.fromhex(public_key_hex)
