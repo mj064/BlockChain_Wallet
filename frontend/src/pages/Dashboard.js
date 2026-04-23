@@ -1,199 +1,199 @@
 import { useState, useEffect, useCallback } from "react";
-import { createWallet, getBalance, getTxHistory, getStats, getMempool } from "../api";
+import { Link } from "react-router-dom";
+import { createWallet, getBalance, getTxHistory, getStats } from "../api";
 
 export default function Dashboard() {
-  const [stats, setStats]     = useState(null);
-  const [mempool, setMempool] = useState({ count: 0, transactions: [] });
-  const [wallet, setWallet]   = useState(() => {
+  const [stats, setStats] = useState(null);
+  const [wallet, setWallet] = useState(() => {
     try { return JSON.parse(localStorage.getItem("bw_wallet")); } catch { return null; }
   });
-  const [balance, setBalance] = useState(null);
+  const [balance, setBalance] = useState("0.00");
   const [history, setHistory] = useState([]);
-  const [password, setPassword]   = useState("");
-  const [creating, setCreating]   = useState(false);
-  const [alert, setAlert]         = useState(null);
+  const [password, setPassword] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [alert, setAlert] = useState(null);
 
   const showAlert = (msg, type = "success") => {
     setAlert({ msg, type });
     setTimeout(() => setAlert(null), 4000);
   };
 
-  const loadStats = useCallback(async () => {
+  const loadData = useCallback(async () => {
     try {
-      const [s, m] = await Promise.all([getStats(), getMempool()]);
+      const s = await getStats();
       setStats(s.data);
-      setMempool(m.data);
-    } catch {}
-  }, []);
-
-  const loadWalletData = useCallback(async () => {
-    if (!wallet) return;
-    try {
-      const [b, h] = await Promise.all([
-        getBalance(wallet.address),
-        getTxHistory(wallet.address),
-      ]);
-      setBalance(b.data.balance);
-      setHistory(h.data.slice(0, 8));
+      if (wallet) {
+        const [b, h] = await Promise.all([
+          getBalance(wallet.address),
+          getTxHistory(wallet.address),
+        ]);
+        setBalance(b.data.balance.toFixed(2));
+        setHistory(h.data);
+      }
     } catch {}
   }, [wallet]);
 
   useEffect(() => {
-    loadStats();
-    loadWalletData();
-    const t = setInterval(() => { loadStats(); loadWalletData(); }, 5000);
+    loadData();
+    const t = setInterval(loadData, 5000);
     return () => clearInterval(t);
-  }, [loadStats, loadWalletData]);
+  }, [loadData]);
 
   const handleCreate = async () => {
-    if (!password) return showAlert("enter a password first", "error");
+    if (!password) return showAlert("Enter a password", "error");
     setCreating(true);
     try {
       const res = await createWallet(password);
-      const w = res.data;
-      setWallet(w);
-      localStorage.setItem("bw_wallet", JSON.stringify(w));
-      showAlert("wallet created successfully");
+      setWallet(res.data);
+      localStorage.setItem("bw_wallet", JSON.stringify(res.data));
+      showAlert("Wallet created successfully!");
       setPassword("");
-    } catch { showAlert("failed to create wallet", "error"); }
+    } catch { showAlert("Failed to create wallet", "error"); }
     finally { setCreating(false); }
   };
 
-  const shortAddr = addr => addr ? addr.slice(0, 8) + "…" + addr.slice(-6) : "";
+  const shortAddr = addr => addr ? addr.slice(0, 12) + "…" + addr.slice(-8) : "";
+
+  if (!wallet) {
+    return (
+      <div className="login-wrap">
+        <div className="login-card">
+          <div className="login-logo">₿</div>
+          <h2 style={{ marginBottom: 12 }}>Create Secure Wallet</h2>
+          <p className="text-muted" style={{ marginBottom: 32, fontSize: 14 }}>
+            Enter a secure password to generate your keys. This password will encrypt your private key locally.
+          </p>
+          
+          {alert && <div className={`alert alert-${alert.type}`}>{alert.msg}</div>}
+
+          <div className="form-group" style={{ textAlign: "left" }}>
+            <label className="label">Password</label>
+            <input
+              className="input"
+              type="password"
+              placeholder="Min 8 characters"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleCreate()}
+            />
+          </div>
+          <button className="btn btn-primary" style={{ width: "100%", padding: 14 }} onClick={handleCreate} disabled={creating}>
+            {creating ? <><div className="spinner" /> Creating Wallet…</> : "Create Wallet"}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <div className="page-header">
-        <h1>Dashboard</h1>
-        <p>Your blockchain wallet overview</p>
-      </div>
-
+    <div style={{ maxWidth: 1200, margin: "0 auto" }}>
       {alert && <div className={`alert alert-${alert.type}`}>{alert.msg}</div>}
 
-      {/* Stats Row */}
-      <div className="grid-4" style={{ marginBottom: 28 }}>
-        <div className="stat-card">
-          <div className="stat-label">Blocks</div>
-          <div className="stat-value stat-purple">{stats?.blocks ?? "—"}</div>
-          <div className="stat-sub">in chain</div>
+      <div className="dashboard-top">
+        <div className="balance-card">
+          <div>
+            <div className="balance-label">Total funds</div>
+            <div className="balance-value">
+              {balance} <span className="balance-currency">BCW</span>
+            </div>
+            <div className="mono text-muted" style={{ fontSize: 13, marginTop: 16 }}>
+              {wallet.address}
+            </div>
+          </div>
+          <div className="balance-actions">
+            <button className="btn btn-secondary" onClick={() => {
+              navigator.clipboard.writeText(wallet.address);
+              showAlert("Address copied!");
+            }}>
+              ↓ Deposit
+            </button>
+            <Link to="/send" className="btn btn-primary">
+              ↗ Withdraw
+            </Link>
+          </div>
         </div>
-        <div className="stat-card">
-          <div className="stat-label">Total TXs</div>
-          <div className="stat-value">{stats?.total_txs ?? "—"}</div>
-          <div className="stat-sub">confirmed</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Mempool</div>
-          <div className="stat-value stat-yellow">{mempool.count}</div>
-          <div className="stat-sub">pending</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Difficulty</div>
-          <div className="stat-value stat-green">{stats?.difficulty ?? "—"}</div>
-          <div className="stat-sub">leading zeros</div>
+
+        <div className="stats-card">
+          <div className="stat-row">
+            <span className="stat-label">Network Blocks</span>
+            <span className="stat-val">{stats?.blocks ?? "—"}</span>
+          </div>
+          <div className="stat-row">
+            <span className="stat-label">Difficulty</span>
+            <span className="stat-val text-green">{stats?.difficulty ?? "—"}</span>
+          </div>
+          <div className="stat-row">
+            <span className="stat-label">Chain Status</span>
+            <span className={`stat-val ${stats?.valid ? "text-green" : "text-red"}`}>
+              {stats == null ? "—" : stats.valid ? "Healthy" : "Invalid"}
+            </span>
+          </div>
+          <div className="stat-row" style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border-color)" }}>
+            <Link to="/mine" className="btn btn-outline" style={{ width: "100%" }}>
+              ⛏ Mine Block
+            </Link>
+          </div>
         </div>
       </div>
 
-      <div className="grid-2" style={{ gap: 24 }}>
-        {/* Wallet Panel */}
-        <div>
-          {wallet ? (
-            <div className="wallet-box" style={{ marginBottom: 20 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-                <div>
-                  <div className="stat-label">Wallet Address</div>
-                  <div className="hash" style={{ fontSize: 13, color: "var(--text)" }}>{wallet.address}</div>
-                </div>
-                <span className="badge badge-green">Active</span>
-              </div>
-              <hr className="sep" />
-              <div>
-                <div className="stat-label">Balance</div>
-                <div>
-                  <span className="balance-display">{balance ?? "—"}</span>
-                  <span className="balance-currency">BCW</span>
-                </div>
-              </div>
-              <div style={{ marginTop: 18, display: "flex", gap: 10 }}>
-                <button
-                  className="btn btn-ghost"
-                  style={{ fontSize: 13 }}
-                  onClick={() => { setWallet(null); localStorage.removeItem("bw_wallet"); }}
-                >
-                  Disconnect
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="card" style={{ marginBottom: 20 }}>
-              <div className="section-title">Create Wallet</div>
-              <div className="form-group">
-                <label className="label">Password</label>
-                <input
-                  className="input"
-                  type="password"
-                  placeholder="Enter a secure password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleCreate()}
-                />
-                <div className="hint">Your private key will be encrypted with this password.</div>
-              </div>
-              <button className="btn btn-primary" onClick={handleCreate} disabled={creating}>
-                {creating ? <><div className="spinner" />Creating…</> : "Create Wallet"}
-              </button>
-            </div>
-          )}
+      <div className="table-container">
+        <div style={{ padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border-color)" }}>
+          <h3 style={{ fontSize: 16 }}>Recent transactions</h3>
+          <Link to="/explorer" className="text-muted" style={{ fontSize: 13, textDecoration: "none" }}>See all &gt;</Link>
+        </div>
+        
+        <div className="table-header">
+          <div>Type</div>
+          <div>Status</div>
+          <div>Address</div>
+          <div style={{ textAlign: "right" }}>Amount</div>
+          <div style={{ textAlign: "right" }}>Block</div>
         </div>
 
-        {/* TX History */}
-        <div className="card">
-          <div className="section-title">Recent Transactions</div>
-          {history.length === 0 ? (
-            <div className="empty">
-              <div className="empty-icon">↕</div>
-              <div>No transactions yet</div>
-            </div>
-          ) : (
-            history.map((tx, i) => {
-              const sent = tx.sender === wallet?.address;
-              return (
-                <div className="tx-row" key={i}>
+        {history.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-text">No transactions found</div>
+          </div>
+        ) : (
+          history.slice(0, 10).map((tx, i) => {
+            const isMine = tx.sender === "SYSTEM" && tx.receiver === wallet.address;
+            const isSend = tx.sender === wallet.address;
+            const isReceive = tx.receiver === wallet.address && !isMine;
+            
+            let icon = "↓"; let iconClass = "receive"; let title = "Received"; let sign = "+";
+            if (isSend) { icon = "↗"; iconClass = "send"; title = "Sent"; sign = "-"; }
+            if (isMine) { icon = "⛏"; iconClass = "mine"; title = "Mined Reward"; sign = "+"; }
+
+            return (
+              <div className="tx-row" key={i}>
+                <div className="tx-cell">
+                  <div className={`tx-icon-wrap ${iconClass}`}>{icon}</div>
                   <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                      <span className={`badge ${sent ? "badge-red" : "badge-green"}`}>
-                        {sent ? "↑ Sent" : "↓ Received"}
-                      </span>
-                      <span className="badge badge-purple">Block #{tx.block_index}</span>
-                    </div>
-                    <div className="tx-addr">
-                      {sent ? `→ ${shortAddr(tx.receiver)}` : `← ${shortAddr(tx.sender)}`}
-                    </div>
-                  </div>
-                  <div className={`tx-amount ${sent ? "" : "stat-green"}`} style={{ color: sent ? "var(--red)" : "var(--green)" }}>
-                    {sent ? "-" : "+"}{tx.amount} BCW
+                    <div style={{ fontWeight: 500, fontSize: 14 }}>{title}</div>
+                    <div className="text-muted" style={{ fontSize: 12 }}>BCW</div>
                   </div>
                 </div>
-              );
-            })
-          )}
-        </div>
-      </div>
-
-      {/* Mempool Preview */}
-      {mempool.transactions.length > 0 && (
-        <div className="card" style={{ marginTop: 24 }}>
-          <div className="section-title">Mempool ({mempool.count} pending)</div>
-          {mempool.transactions.map((tx, i) => (
-            <div className="tx-row" key={i}>
-              <div>
-                <div className="tx-addr">{tx.sender?.slice(0,14)}… → {tx.receiver?.slice(0,14)}…</div>
+                
+                <div className="tx-cell">
+                  <span className="tx-status-badge completed">Completed</span>
+                </div>
+                
+                <div className="tx-cell mono">
+                  {isSend ? `To: ${shortAddr(tx.receiver)}` : isReceive ? `From: ${shortAddr(tx.sender)}` : "System Reward"}
+                </div>
+                
+                <div className="tx-cell mono" style={{ justifyContent: "flex-end", color: sign === "+" ? "var(--green)" : "var(--text-main)", fontWeight: 500 }}>
+                  {sign}{parseFloat(tx.amount).toFixed(2)} BCW
+                </div>
+                
+                <div className="tx-cell" style={{ justifyContent: "flex-end", color: "var(--text-muted)" }}>
+                  #{tx.block_index}
+                </div>
               </div>
-              <span className="badge badge-yellow">{tx.amount} BCW</span>
-            </div>
-          ))}
-        </div>
-      )}
+            );
+          })
+        )}
+      </div>
     </div>
   );
 }
