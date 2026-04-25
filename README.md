@@ -1,75 +1,118 @@
 # BlockChain_Wallet
 
-a full-stack decentralized blockchain wallet with p2p networking, proof-of-work mining, and a modern react dashboard.
+BlockChain_Wallet is a full-stack crypto wallet playground with two tracks:
 
-## features
-- **wallet**: ecdsa key generation, sha-256 address derivation, aes-gcm encrypted key storage
-- **transactions**: signed transactions with ecdsa, broadcast loop prevention, mempool management
-- **blockchain**: sha-256 proof-of-work, genesis block, chain validation
-- **consensus**: longest-chain rule across p2p nodes
-- **balance tracking**: real-time balance and full transaction history per address
-- **frontend**: dark glassmorphism 5-page react dashboard
+- a custom blockchain + P2P node backend (mining, mempool, consensus)
+- a production-style USDC payment workflow with settlement activity tooling in the frontend
 
-## project structure
+This repo is useful if you want to experiment with both core blockchain mechanics and a practical payment-intent UX.
+
+## What You Get
+
+### Core chain and node features
+
+- ECDSA wallet/key flow with encrypted storage support
+- Transaction signing and verification
+- Mempool, block mining, and chain validation
+- Basic node networking and longest-chain resolution
+
+### Production payments UI flow
+
+- Payment intent create, submit, and confirm flow
+- Contact book for saved recipient addresses
+- Settlement activity timeline (intent, tx, receipt, webhook)
+- Activity filters by event kind and webhook source
+- Activity export (JSON and CSV) with metadata and deterministic checksums
+
+## Project Layout
+
 ```text
 BlockChain_Wallet/
 ├── backend/
 │   ├── app/
-│   │   ├── blockchain/  # block + chain logic
-│   │   ├── network/     # p2p node + consensus
-│   │   ├── transactions/# signing + verification
-│   │   ├── wallet/      # crypto primitives
-│   │   └── main.py      # fastapi node api
+│   │   ├── blockchain/
+│   │   ├── network/
+│   │   ├── transactions/
+│   │   ├── wallet/
+│   │   ├── production/
+│   │   └── main.py
+│   ├── tests/
 │   ├── requirements.txt
 │   └── Dockerfile
 ├── frontend/
-│   ├── public/
 │   ├── src/
-│   │   ├── components/  # sidebar
-│   │   ├── pages/       # dashboard, send, explorer, mine, network
-│   │   ├── App.js
-│   │   ├── api.js
-│   │   └── index.css    # dark design system
-│   └── package.json
+│   │   ├── production/
+│   │   ├── pages/
+│   │   └── components/
+│   ├── package.json
+│   └── vite.config.ts
 ├── docker-compose.yml
+├── graphify-out/
 └── README.md
 ```
 
-## setup
+## Quick Start
 
-### backend
+### 1) Backend
+
 ```bash
 cd backend
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-### frontend
+### 2) Frontend
+
 ```bash
 cd frontend
 npm install
-npm start
+npm run dev
 ```
 
-## api endpoints
-| method | route | description |
-|--------|-------|-------------|
-| POST | `/wallet` | create encrypted wallet |
-| GET | `/balance/{addr}` | get address balance |
-| GET | `/history/{addr}` | transaction history |
-| POST | `/tx` | create signed transaction |
-| POST | `/tx/add` | broadcast transaction |
-| GET | `/mine/{addr}` | mine a block |
-| GET | `/chain` | full blockchain |
-| GET | `/mempool` | pending transactions |
-| GET | `/stats` | chain statistics |
-| POST | `/node/add` | register peer node |
-| GET | `/resolve` | run consensus |
+## Running Tests
 
-## docker (3-node network)
+### Backend tests
+
+```bash
+python -m pytest backend/tests -q
+```
+
+### Frontend tests
+
+```bash
+npm --prefix frontend run test -- --run
+```
+
+## Settlement Activity Export Notes
+
+The production wallet export is designed for audit/debug workflows, not just display.
+
+- JSON export shape:
+	- metadata
+	- events
+- CSV export includes metadata header rows before event rows.
+- Metadata includes:
+	- schemaVersion
+	- filter state
+	- generatedAtUtc
+	- eventCount
+	- kind/source counts
+	- eventsChecksum
+
+Important behavior:
+
+- source labels are normalized to ALCHEMY, CIRCLE, NONE, OTHER
+- sorting is deterministic for stable output/checksum
+- invalid/unparseable timestamps do not crash the UI
+
+## Docker
+
+To run the multi-node setup:
+
 ```bash
 docker-compose up --build
 ```
 
-## license
+## License
+
 MIT
