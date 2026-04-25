@@ -1378,19 +1378,17 @@ export function ProductionWalletApp({
                   >
                     {eventLabels[event.kind] ?? event.kind}
                   </span>
-                  {event.webhookSource ? (
-                    <span
-                      className="text-muted"
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        textTransform: "uppercase",
-                        letterSpacing: 0.6,
-                      }}
-                    >
-                      {normalizeWebhookSource(event.webhookSource)}
-                    </span>
-                  ) : null}
+                  <span
+                    className="text-muted"
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: 0.6,
+                    }}
+                  >
+                    {normalizeWebhookSource(event.webhookSource)}
+                  </span>
                   <span className="text-muted" style={{ fontSize: 12 }}>
                     {formatTimelineTime(event.occurredAt)}
                   </span>

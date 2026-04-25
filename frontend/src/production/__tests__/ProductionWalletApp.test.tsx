@@ -415,6 +415,57 @@ describe("ProductionWalletApp", () => {
     expect(screen.queryByText(/Source: circle/i)).not.toBeInTheDocument();
   });
 
+  it("filters settlement activity to unknown webhook providers as OTHER", async () => {
+    const api = fakeApi();
+    api.listActivityEvents = vi.fn(async () => [
+      {
+        id: "event_other",
+        kind: "webhook_received" as const,
+        intentId: "intent_999",
+        chain: "base" as const,
+        asset: "USDC" as const,
+        amount: "3.00",
+        status: "confirmed" as const,
+        txHash: "0x9999999999999999999999999999999999999999999999999999999999999999",
+        receiptUrl: null,
+        webhookSource: "mystery-provider",
+        webhookType: "TRANSFER_SEEN",
+        occurredAt: "2026-04-24T12:20:00.000Z",
+      },
+      {
+        id: "event_circle",
+        kind: "webhook_received" as const,
+        intentId: "intent_123",
+        chain: "base" as const,
+        asset: "USDC" as const,
+        amount: "12.50",
+        status: "confirmed" as const,
+        txHash: "0x2222222222222222222222222222222222222222222222222222222222222222",
+        receiptUrl: null,
+        webhookSource: "circle",
+        webhookType: "TRANSFER_CONFIRMED",
+        occurredAt: "2026-04-24T12:19:00.000Z",
+      },
+    ]);
+
+    render(<ProductionWalletApp apiClient={api} initialWalletAddress={OWNER} />);
+
+    expect(await screen.findByText(/Showing 2 events/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Sources: ALCHEMY 0 \| CIRCLE 1 \| NONE 0 \| OTHER 1/i),
+    ).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Other source" }));
+
+    expect(screen.getByText(/Showing 1 event/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Sources: ALCHEMY 0 \| CIRCLE 0 \| NONE 0 \| OTHER 1/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText("OTHER")).toBeInTheDocument();
+    expect(screen.queryByText(/Source: circle/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Source: OTHER \| TRANSFER_SEEN/i)).toBeInTheDocument();
+  });
+
   it("shows activity summary stats and clears filters back to the full feed", async () => {
     render(<ProductionWalletApp apiClient={fakeApi()} initialWalletAddress={OWNER} />);
 
