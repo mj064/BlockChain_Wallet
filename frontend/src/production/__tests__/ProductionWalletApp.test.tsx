@@ -403,6 +403,18 @@ describe("ProductionWalletApp", () => {
     expect(screen.queryByText(/Source: alchemy/i)).not.toBeInTheDocument();
   });
 
+  it("filters settlement activity to entries with no webhook source", async () => {
+    render(<ProductionWalletApp apiClient={fakeApi()} initialWalletAddress={OWNER} />);
+
+    expect(await screen.findByText(/Showing 5 events/i)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "No source" }));
+
+    expect(screen.getByText(/Showing 3 events/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Source: alchemy/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Source: circle/i)).not.toBeInTheDocument();
+  });
+
   it("shows activity summary stats and clears filters back to the full feed", async () => {
     render(<ProductionWalletApp apiClient={fakeApi()} initialWalletAddress={OWNER} />);
 

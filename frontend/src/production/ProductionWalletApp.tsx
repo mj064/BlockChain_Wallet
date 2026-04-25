@@ -92,7 +92,9 @@ function normalizeWebhookSource(value: string | null) {
   return "OTHER";
 }
 
-function normalizeWebhookSourceFilter(value: "all" | "alchemy" | "circle") {
+function normalizeWebhookSourceFilter(
+  value: "all" | "alchemy" | "circle" | "none" | "other",
+) {
   if (value === "all") {
     return "all";
   }
@@ -115,7 +117,14 @@ function compareOccurredAtDesc(leftOccurredAt: string, rightOccurredAt: string) 
     return rightTime - leftTime;
   }
 
-  return rightOccurredAt.localeCompare(leftOccurredAt);
+  return compareStrings(rightOccurredAt, leftOccurredAt);
+}
+
+function compareStrings(left: string, right: string) {
+  if (left === right) {
+    return 0;
+  }
+  return left < right ? -1 : 1;
 }
 
 function compareActivityEvents(left: ActivityEventResponse, right: ActivityEventResponse) {
@@ -141,13 +150,13 @@ function compareActivityEvents(left: ActivityEventResponse, right: ActivityEvent
   ];
 
   for (const [leftKey, rightKey] of keys) {
-    const comparison = leftKey.localeCompare(rightKey);
+    const comparison = compareStrings(leftKey, rightKey);
     if (comparison !== 0) {
       return comparison;
     }
   }
 
-  return left.id.localeCompare(right.id);
+  return compareStrings(left.id, right.id);
 }
 
 function compareExportRows(left: ActivityExportRow, right: ActivityExportRow) {
@@ -170,7 +179,7 @@ function compareExportRows(left: ActivityExportRow, right: ActivityExportRow) {
   ];
 
   for (const key of keys) {
-    const comparison = left[key].localeCompare(right[key]);
+    const comparison = compareStrings(left[key], right[key]);
     if (comparison !== 0) {
       return comparison;
     }
@@ -319,7 +328,7 @@ export function ProductionWalletApp({
     "all" | ActivityEventResponse["kind"]
   >("all");
   const [activitySourceFilter, setActivitySourceFilter] = useState<
-    "all" | "alchemy" | "circle"
+    "all" | "alchemy" | "circle" | "none" | "other"
   >("all");
   const [error, setError] = useState<string | null>(null);
 
@@ -559,8 +568,9 @@ export function ProductionWalletApp({
         accumulator.total += 1;
         accumulator.kinds[event.kind] = (accumulator.kinds[event.kind] ?? 0) + 1;
         if (event.webhookSource) {
-          accumulator.sources[event.webhookSource] =
-            (accumulator.sources[event.webhookSource] ?? 0) + 1;
+          const normalizedSource = normalizeWebhookSource(event.webhookSource);
+          accumulator.sources[normalizedSource] =
+            (accumulator.sources[normalizedSource] ?? 0) + 1;
         }
         return accumulator;
       },
@@ -1233,6 +1243,8 @@ export function ProductionWalletApp({
             { value: "all", label: "Any source" },
             { value: "alchemy", label: "Alchemy" },
             { value: "circle", label: "Circle" },
+            { value: "none", label: "No source" },
+            { value: "other", label: "Other source" },
           ].map((option) => (
             <button
               key={option.value}
@@ -1247,7 +1259,9 @@ export function ProductionWalletApp({
                     : undefined,
               }}
               onClick={() =>
-                setActivitySourceFilter(option.value as "all" | "alchemy" | "circle")
+                setActivitySourceFilter(
+                  option.value as "all" | "alchemy" | "circle" | "none" | "other",
+                )
               }
             >
               {option.label}
