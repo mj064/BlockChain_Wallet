@@ -484,6 +484,73 @@ describe("ProductionWalletApp", () => {
     expect(csvText.includes("CIRCLE")).toBe(true);
   });
 
+  it("exports events in deterministic order when timestamps are unparseable", async () => {
+    const api = fakeApi();
+    api.listActivityEvents = vi.fn(async () => [
+      {
+        id: "event_a",
+        kind: "webhook_received" as const,
+        intentId: "intent_123",
+        chain: "base" as const,
+        asset: "USDC" as const,
+        amount: "12.50",
+        status: "confirmed" as const,
+        txHash: null,
+        receiptUrl: null,
+        webhookSource: "alchemy",
+        webhookType: "MINED_TRANSACTION",
+        occurredAt: "alpha-time",
+      },
+      {
+        id: "event_b",
+        kind: "webhook_received" as const,
+        intentId: "intent_123",
+        chain: "base" as const,
+        asset: "USDC" as const,
+        amount: "12.50",
+        status: "confirmed" as const,
+        txHash: null,
+        receiptUrl: null,
+        webhookSource: "circle",
+        webhookType: "TRANSFER_CONFIRMED",
+        occurredAt: "zeta-time",
+      },
+      {
+        id: "event_c",
+        kind: "webhook_received" as const,
+        intentId: "intent_123",
+        chain: "base" as const,
+        asset: "USDC" as const,
+        amount: "12.50",
+        status: "confirmed" as const,
+        txHash: null,
+        receiptUrl: null,
+        webhookSource: "circle",
+        webhookType: "TRANSFER_CONFIRMED",
+        occurredAt: "beta-time",
+      },
+    ]);
+
+    render(<ProductionWalletApp apiClient={api} initialWalletAddress={OWNER} />);
+
+    expect(await screen.findByText(/Showing 3 events/i)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Export JSON" }));
+
+    const jsonBlob = createObjectUrlMock.mock.calls[0][0] as { text: () => Promise<string> };
+    const exportedJson = JSON.parse(await jsonBlob.text()) as {
+      metadata: Record<string, string | number>;
+      events: Array<Record<string, string>>;
+    };
+
+    expect(exportedJson.events.map((event) => event.occurredAt)).toEqual([
+      "zeta-time",
+      "beta-time",
+      "alpha-time",
+    ]);
+    expect(exportedJson.metadata.eventsChecksum).toBe(computeChecksum(exportedJson.events));
+  });
+
   it("exports snapshot metadata that matches active filters", async () => {
     render(<ProductionWalletApp apiClient={fakeApi()} initialWalletAddress={OWNER} />);
 

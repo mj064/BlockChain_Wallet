@@ -27,7 +27,11 @@ const TIMELINE_FORMATTER = new Intl.DateTimeFormat("en-US", {
 });
 
 function formatTimelineTime(value: string) {
-  return TIMELINE_FORMATTER.format(new Date(value));
+  const parsed = Date.parse(value);
+  if (!Number.isFinite(parsed)) {
+    return value;
+  }
+  return TIMELINE_FORMATTER.format(new Date(parsed));
 }
 
 function csvEscape(value: string) {
@@ -103,10 +107,53 @@ function normalizeTimestamp(value: string) {
   return value;
 }
 
+function compareOccurredAtDesc(leftOccurredAt: string, rightOccurredAt: string) {
+  const leftTime = Date.parse(leftOccurredAt);
+  const rightTime = Date.parse(rightOccurredAt);
+
+  if (Number.isFinite(leftTime) && Number.isFinite(rightTime)) {
+    return rightTime - leftTime;
+  }
+
+  return rightOccurredAt.localeCompare(leftOccurredAt);
+}
+
+function compareActivityEvents(left: ActivityEventResponse, right: ActivityEventResponse) {
+  const timeComparison = compareOccurredAtDesc(left.occurredAt, right.occurredAt);
+  if (timeComparison !== 0) {
+    return timeComparison;
+  }
+
+  const leftSource = normalizeWebhookSource(left.webhookSource);
+  const rightSource = normalizeWebhookSource(right.webhookSource);
+
+  const keys: Array<[string, string]> = [
+    [left.kind, right.kind],
+    [left.intentId, right.intentId],
+    [left.chain, right.chain],
+    [left.asset, right.asset],
+    [left.amount, right.amount],
+    [left.status ?? "", right.status ?? ""],
+    [left.txHash ?? "", right.txHash ?? ""],
+    [left.receiptUrl ?? "", right.receiptUrl ?? ""],
+    [leftSource, rightSource],
+    [left.webhookType ?? "", right.webhookType ?? ""],
+  ];
+
+  for (const [leftKey, rightKey] of keys) {
+    const comparison = leftKey.localeCompare(rightKey);
+    if (comparison !== 0) {
+      return comparison;
+    }
+  }
+
+  return left.id.localeCompare(right.id);
+}
+
 function compareExportRows(left: ActivityExportRow, right: ActivityExportRow) {
-  const timeDelta = Date.parse(right.occurredAt) - Date.parse(left.occurredAt);
-  if (timeDelta !== 0) {
-    return timeDelta;
+  const occurredAtComparison = compareOccurredAtDesc(left.occurredAt, right.occurredAt);
+  if (occurredAtComparison !== 0) {
+    return occurredAtComparison;
   }
 
   const keys: Array<keyof ActivityExportRow> = [
@@ -489,7 +536,7 @@ export function ProductionWalletApp({
       deduped.push(event);
     }
     return deduped.sort(
-      (left, right) => Date.parse(right.occurredAt) - Date.parse(left.occurredAt),
+      compareActivityEvents,
     );
   }, [activityEvents]);
 
