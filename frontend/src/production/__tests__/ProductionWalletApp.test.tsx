@@ -419,13 +419,22 @@ describe("ProductionWalletApp", () => {
     render(<ProductionWalletApp apiClient={fakeApi()} initialWalletAddress={OWNER} />);
 
     expect(await screen.findByText(/Showing 5 events/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Sources: ALCHEMY 1 \| CIRCLE 1 \| NONE 3 \| OTHER 0/i),
+    ).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Receipts" }));
     expect(screen.getByText(/Showing 1 event/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Sources: ALCHEMY 0 \| CIRCLE 0 \| NONE 1 \| OTHER 0/i),
+    ).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /Clear filters/i }));
 
     expect(screen.getByText(/Showing 5 events/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Sources: ALCHEMY 1 \| CIRCLE 1 \| NONE 3 \| OTHER 0/i),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Clear filters/i })).not.toBeInTheDocument();
   });
 

@@ -567,11 +567,9 @@ export function ProductionWalletApp({
       (accumulator, event) => {
         accumulator.total += 1;
         accumulator.kinds[event.kind] = (accumulator.kinds[event.kind] ?? 0) + 1;
-        if (event.webhookSource) {
-          const normalizedSource = normalizeWebhookSource(event.webhookSource);
-          accumulator.sources[normalizedSource] =
-            (accumulator.sources[normalizedSource] ?? 0) + 1;
-        }
+        const normalizedSource = normalizeWebhookSource(event.webhookSource);
+        accumulator.sources[normalizedSource] =
+          (accumulator.sources[normalizedSource] ?? 0) + 1;
         return accumulator;
       },
       {
@@ -1281,6 +1279,9 @@ export function ProductionWalletApp({
         >
           <div className="text-muted" style={{ fontSize: 12 }}>
             Showing {activityStats.total} event{activityStats.total === 1 ? "" : "s"}
+          </div>
+          <div className="text-muted" style={{ fontSize: 12 }}>
+            Sources: ALCHEMY {activityStats.sources.ALCHEMY ?? 0} | CIRCLE {activityStats.sources.CIRCLE ?? 0} | NONE {activityStats.sources.NONE ?? 0} | OTHER {activityStats.sources.OTHER ?? 0}
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button
