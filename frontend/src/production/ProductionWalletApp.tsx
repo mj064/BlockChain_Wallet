@@ -1226,6 +1226,7 @@ export function ProductionWalletApp({
               key={option.value}
               type="button"
               className="btn btn-secondary"
+              aria-pressed={activityKindFilter === option.value}
               style={{
                 padding: "4px 10px",
                 fontSize: 12,
@@ -1257,6 +1258,7 @@ export function ProductionWalletApp({
               key={option.value}
               type="button"
               className="btn btn-secondary"
+              aria-pressed={activitySourceFilter === option.value}
               style={{
                 padding: "4px 10px",
                 fontSize: 12,

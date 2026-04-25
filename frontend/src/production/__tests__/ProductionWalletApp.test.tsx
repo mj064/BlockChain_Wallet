@@ -403,6 +403,30 @@ describe("ProductionWalletApp", () => {
     expect(screen.queryByText(/Source: alchemy/i)).not.toBeInTheDocument();
   });
 
+  it("exposes pressed states for settlement filter toggles", async () => {
+    render(<ProductionWalletApp apiClient={fakeApi()} initialWalletAddress={OWNER} />);
+
+    expect(await screen.findByText(/Showing 5 events/i)).toBeInTheDocument();
+
+    const allKindButton = screen.getByRole("button", { name: "All" });
+    const webhookKindButton = screen.getByRole("button", { name: "Webhooks" });
+    const anySourceButton = screen.getByRole("button", { name: "Any source" });
+    const circleSourceButton = screen.getByRole("button", { name: "Circle" });
+
+    expect(allKindButton).toHaveAttribute("aria-pressed", "true");
+    expect(webhookKindButton).toHaveAttribute("aria-pressed", "false");
+    expect(anySourceButton).toHaveAttribute("aria-pressed", "true");
+    expect(circleSourceButton).toHaveAttribute("aria-pressed", "false");
+
+    await userEvent.click(webhookKindButton);
+    await userEvent.click(circleSourceButton);
+
+    expect(allKindButton).toHaveAttribute("aria-pressed", "false");
+    expect(webhookKindButton).toHaveAttribute("aria-pressed", "true");
+    expect(anySourceButton).toHaveAttribute("aria-pressed", "false");
+    expect(circleSourceButton).toHaveAttribute("aria-pressed", "true");
+  });
+
   it("filters settlement activity to entries with no webhook source", async () => {
     render(<ProductionWalletApp apiClient={fakeApi()} initialWalletAddress={OWNER} />);
 
