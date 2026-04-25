@@ -102,6 +102,7 @@ The production wallet export is designed for audit/debug workflows, not just dis
 Important behavior:
 
 - source labels are normalized to ALCHEMY, CIRCLE, NONE, OTHER
+- metadata filterSource is canonicalized to ALL, ALCHEMY, CIRCLE, NONE, or OTHER
 - sorting is deterministic for stable output/checksum
 - invalid/unparseable timestamps do not crash the UI
 

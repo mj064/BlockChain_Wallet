@@ -513,7 +513,7 @@ describe("ProductionWalletApp", () => {
     expect(exportedJson.metadata.walletAddress).toBe(OWNER);
     expect(exportedJson.metadata.schemaVersion).toBe("activity-export.v1");
     expect(exportedJson.metadata.filterKind).toBe("all");
-    expect(exportedJson.metadata.filterSource).toBe("all");
+    expect(exportedJson.metadata.filterSource).toBe("ALL");
     expect(exportedJson.metadata.eventCount).toBe(5);
     expect(typeof exportedJson.metadata.generatedAtUtc).toBe("string");
     expect(typeof exportedJson.metadata.eventsChecksum).toBe("string");
@@ -542,7 +542,7 @@ describe("ProductionWalletApp", () => {
     expect(csvLines[0]).toBe("# schemaVersion,activity-export.v1");
     expect(csvLines[1]).toBe(`# walletAddress,${OWNER}`);
     expect(csvLines[3]).toBe("# filterKind,all");
-    expect(csvLines[4]).toBe("# filterSource,all");
+    expect(csvLines[4]).toBe("# filterSource,ALL");
     expect(csvLines[5]).toBe("# eventCount,5");
     expect(csvLines[6]).toBe(`# eventsChecksum,${exportedJson.metadata.eventsChecksum}`);
     expect(csvLines[7]).toBe("# kindCounts.intent_created,1");
@@ -642,7 +642,7 @@ describe("ProductionWalletApp", () => {
     };
 
     expect(exportedJson.metadata.filterKind).toBe("webhook_received");
-    expect(exportedJson.metadata.filterSource).toBe("circle");
+    expect(exportedJson.metadata.filterSource).toBe("CIRCLE");
     expect(exportedJson.metadata.schemaVersion).toBe("activity-export.v1");
     expect(exportedJson.metadata.eventCount).toBe(1);
     expect(String(exportedJson.metadata.eventsChecksum)).toMatch(/^fnv1a32:[0-9a-f]{8}$/);
@@ -651,6 +651,34 @@ describe("ProductionWalletApp", () => {
     expect(exportedJson.metadata.sourceCounts).toMatchObject({ CIRCLE: 1 });
     expect(exportedJson.events.length).toBe(1);
     expect(exportedJson.events[0].webhookSource).toBe("CIRCLE");
+  });
+
+  it("exports snapshot metadata with NONE source when no-source filter is active", async () => {
+    render(<ProductionWalletApp apiClient={fakeApi()} initialWalletAddress={OWNER} />);
+
+    expect(await screen.findByText(/Showing 5 events/i)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "No source" }));
+    expect(screen.getByText(/Showing 3 events/i)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Export JSON" }));
+
+    const jsonBlob = createObjectUrlMock.mock.calls[0][0] as { text: () => Promise<string> };
+    const jsonText = await jsonBlob.text();
+    const exportedJson = JSON.parse(jsonText) as {
+      metadata: Record<string, string | number>;
+      events: Array<Record<string, string>>;
+    };
+
+    expect(exportedJson.metadata.filterKind).toBe("all");
+    expect(exportedJson.metadata.filterSource).toBe("NONE");
+    expect(exportedJson.metadata.eventCount).toBe(3);
+    expect(exportedJson.metadata.sourceCounts).toMatchObject({
+      ALCHEMY: 0,
+      CIRCLE: 0,
+      NONE: 3,
+      OTHER: 0,
+    });
   });
 
   it("disables export actions when filters produce zero events", async () => {

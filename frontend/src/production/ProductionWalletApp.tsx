@@ -67,6 +67,8 @@ type ActivityExportMetadata = {
   sourceCounts: Record<string, number>;
 };
 
+type ActivitySourceFilterValue = "all" | "alchemy" | "circle" | "none" | "other";
+
 function computeChecksum(rows: ActivityExportRow[]) {
   // FNV-1a 32-bit hash for deterministic, lightweight client-side checksums.
   let hash = 0x811c9dc5;
@@ -93,10 +95,17 @@ function normalizeWebhookSource(value: string | null) {
 }
 
 function normalizeWebhookSourceFilter(
-  value: "all" | "alchemy" | "circle" | "none" | "other",
+  value: ActivitySourceFilterValue,
 ) {
   if (value === "all") {
     return "all";
+  }
+  return value.toUpperCase();
+}
+
+function normalizeExportFilterSource(value: ActivitySourceFilterValue) {
+  if (value === "all") {
+    return "ALL";
   }
   return value.toUpperCase();
 }
@@ -328,7 +337,7 @@ export function ProductionWalletApp({
     "all" | ActivityEventResponse["kind"]
   >("all");
   const [activitySourceFilter, setActivitySourceFilter] = useState<
-    "all" | "alchemy" | "circle" | "none" | "other"
+    ActivitySourceFilterValue
   >("all");
   const [error, setError] = useState<string | null>(null);
 
@@ -617,7 +626,7 @@ export function ProductionWalletApp({
       initialWalletAddress,
       new Date().toISOString(),
       activityKindFilter,
-      activitySourceFilter,
+      normalizeExportFilterSource(activitySourceFilter),
       exportSnapshot.eventCount,
       exportSnapshot.eventsChecksum,
       exportSnapshot.kindCounts,
@@ -1258,7 +1267,7 @@ export function ProductionWalletApp({
               }}
               onClick={() =>
                 setActivitySourceFilter(
-                  option.value as "all" | "alchemy" | "circle" | "none" | "other",
+                  option.value as ActivitySourceFilterValue,
                 )
               }
             >
