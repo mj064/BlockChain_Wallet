@@ -1,23 +1,41 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from app.production.api import router as production_router
+from app.production.config import get_settings
+from app.production.database import init_db
 from app.wallet.service import create_wallet
 from app.transactions.tx_service import create_tx, verify_tx
 from app.blockchain.blockchain import Blockchain
 from app.network.node import Node
 
-app = FastAPI(title="BlockChain Wallet API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(title="BlockChain Wallet API", lifespan=lifespan)
+settings = get_settings()
 bc = Blockchain()
 node = Node()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.allowed_origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+app.include_router(production_router)
+
 @app.get("/")
 def root(): return {"status": "online", "blocks": len(bc.chain)}
+
+@app.get("/health")
+def health():
+    return {"status": "ok", "blocks": len(bc.chain), "pending": len(bc.pending)}
 
 @app.post("/wallet")
 def wallet(p: dict): return create_wallet(p["password"])

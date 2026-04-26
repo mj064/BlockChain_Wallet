@@ -83,6 +83,19 @@ python -m pytest backend/tests -q
 npm --prefix frontend run test -- --run
 ```
 
+## Health Check
+
+The backend now exposes a lightweight runtime check endpoint:
+
+- GET /health
+	- returns status, current block count, and pending transaction count
+
+Example:
+
+```bash
+curl http://localhost:8000/health
+```
+
 ## Settlement Activity Export Notes
 
 The production wallet export is designed for audit/debug workflows, not just display.
@@ -113,6 +126,19 @@ To run the multi-node setup:
 ```bash
 docker-compose up --build
 ```
+
+## CI and Dependency Checks
+
+GitHub Actions workflows are included under .github/workflows:
+
+- ci.yml
+	- runs backend tests (pytest)
+	- runs frontend tests (vitest)
+	- runs frontend build
+- dependency-checks.yml
+	- scheduled weekly dependency checks
+	- pip check + pip outdated listing
+	- npm audit (high severity threshold)
 
 ## License
 
