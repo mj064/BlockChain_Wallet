@@ -19,6 +19,11 @@ const originalConsoleError = console.error;
 const createObjectUrlMock = vi.fn(() => "blob:activity");
 const revokeObjectUrlMock = vi.fn();
 
+function getCreatedBlob(index: number) {
+  const calls = createObjectUrlMock.mock.calls as unknown as Array<[Blob]>;
+  return calls[index][0];
+}
+
 class TestBlob {
   type: string;
   size: number;
@@ -524,8 +529,8 @@ describe("ProductionWalletApp", () => {
     expect(createObjectUrlMock).toHaveBeenCalledTimes(2);
     expect(revokeObjectUrlMock).toHaveBeenCalledTimes(2);
 
-    const jsonBlob = createObjectUrlMock.mock.calls[0][0] as Blob;
-    const csvBlob = createObjectUrlMock.mock.calls[1][0] as Blob;
+    const jsonBlob = getCreatedBlob(0);
+    const csvBlob = getCreatedBlob(1);
 
     const jsonText = await jsonBlob.text();
     const csvText = await csvBlob.text();
@@ -633,7 +638,7 @@ describe("ProductionWalletApp", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Export JSON" }));
 
-    const jsonBlob = createObjectUrlMock.mock.calls[0][0] as { text: () => Promise<string> };
+    const jsonBlob = getCreatedBlob(0) as unknown as { text: () => Promise<string> };
     const exportedJson = JSON.parse(await jsonBlob.text()) as {
       metadata: Record<string, string | number>;
       events: Array<Record<string, string>>;
@@ -658,7 +663,7 @@ describe("ProductionWalletApp", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Export JSON" }));
 
-    const jsonBlob = createObjectUrlMock.mock.calls[0][0] as { text: () => Promise<string> };
+    const jsonBlob = getCreatedBlob(0) as unknown as { text: () => Promise<string> };
     const jsonText = await jsonBlob.text();
     const exportedJson = JSON.parse(jsonText) as {
       metadata: Record<string, string | number>;
@@ -687,7 +692,7 @@ describe("ProductionWalletApp", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Export JSON" }));
 
-    const jsonBlob = createObjectUrlMock.mock.calls[0][0] as { text: () => Promise<string> };
+    const jsonBlob = getCreatedBlob(0) as unknown as { text: () => Promise<string> };
     const jsonText = await jsonBlob.text();
     const exportedJson = JSON.parse(jsonText) as {
       metadata: Record<string, string | number>;
@@ -738,14 +743,14 @@ describe("ProductionWalletApp", () => {
 
     const api = fakeApi();
     api.listPaymentIntents = vi.fn(async () => [existingIntent]);
-    api.submitPaymentIntent = vi.fn(async () => ({
+    api.submitPaymentIntent = vi.fn(async (): Promise<PaymentIntentResponse> => ({
       ...existingIntent,
-      status: "submitted",
+      status: "submitted" as const,
       txHash: "0xabc",
     }));
-    api.confirmPaymentIntent = vi.fn(async () => ({
+    api.confirmPaymentIntent = vi.fn(async (): Promise<PaymentIntentResponse> => ({
       ...existingIntent,
-      status: "confirmed",
+      status: "confirmed" as const,
       txHash: "0xabc",
       confirmations: 1,
       receiptUrl: "https://example/receipt",

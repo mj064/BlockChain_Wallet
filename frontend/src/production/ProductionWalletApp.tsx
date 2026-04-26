@@ -36,7 +36,7 @@ function formatTimelineTime(value: string) {
 
 function csvEscape(value: string) {
   if (value.includes(",") || value.includes("\n") || value.includes('"')) {
-    return `"${value.replaceAll('"', '""')}"`;
+    return `"${value.split('"').join('""')}"`;
   }
   return value;
 }
