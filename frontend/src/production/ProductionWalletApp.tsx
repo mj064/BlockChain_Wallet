@@ -310,6 +310,13 @@ function makeIdempotencyKey() {
   return `intent-${Date.now()}`;
 }
 
+function resolveErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+  return fallback;
+}
+
 export function ProductionWalletApp({
   apiClient,
   initialWalletAddress,
@@ -374,9 +381,9 @@ export function ProductionWalletApp({
         setIntents(nextIntents);
         setContacts(nextContacts);
         setActivityEvents(nextEvents);
-      } catch {
+      } catch (caught) {
         if (!cancelled) {
-          setError("Unable to load production wallet data.");
+          setError(resolveErrorMessage(caught, "Unable to load production wallet data."));
         }
       } finally {
         if (!cancelled) {
@@ -414,8 +421,8 @@ export function ProductionWalletApp({
         amount: "",
         note: "",
       }));
-    } catch {
-      setError("Unable to prepare the USDC payment intent.");
+    } catch (caught) {
+      setError(resolveErrorMessage(caught, "Unable to prepare the USDC payment intent."));
     } finally {
       setSubmitting(false);
     }
@@ -431,8 +438,8 @@ export function ProductionWalletApp({
         chainPreference: form.chainPreference,
       });
       setQuote(nextQuote);
-    } catch {
-      setError("Unable to generate payment quote.");
+    } catch (caught) {
+      setError(resolveErrorMessage(caught, "Unable to generate payment quote."));
     } finally {
       setQuoting(false);
     }
@@ -448,8 +455,8 @@ export function ProductionWalletApp({
       setContactForm({ label: "", walletAddress: "" });
       const nextContacts = await apiClient.listContacts(initialWalletAddress);
       setContacts(nextContacts);
-    } catch {
-      setError("Unable to save contact.");
+    } catch (caught) {
+      setError(resolveErrorMessage(caught, "Unable to save contact."));
     } finally {
       setContactSaving(false);
     }
@@ -462,8 +469,8 @@ export function ProductionWalletApp({
       await apiClient.deleteContact(initialWalletAddress, contactId);
       const nextContacts = await apiClient.listContacts(initialWalletAddress);
       setContacts(nextContacts);
-    } catch {
-      setError("Unable to remove contact.");
+    } catch (caught) {
+      setError(resolveErrorMessage(caught, "Unable to remove contact."));
     } finally {
       setSyncing(false);
     }
@@ -478,8 +485,8 @@ export function ProductionWalletApp({
         current.map((item) => (item.id === updated.id ? updated : item)),
       );
       setIntent((current) => (current?.id === updated.id ? updated : current));
-    } catch {
-      setError("Unable to submit payment intent.");
+    } catch (caught) {
+      setError(resolveErrorMessage(caught, "Unable to submit payment intent."));
     } finally {
       setIntentActionId(null);
     }
@@ -498,8 +505,8 @@ export function ProductionWalletApp({
         current.map((item) => (item.id === updated.id ? updated : item)),
       );
       setIntent((current) => (current?.id === updated.id ? updated : current));
-    } catch {
-      setError("Unable to confirm payment intent.");
+    } catch (caught) {
+      setError(resolveErrorMessage(caught, "Unable to confirm payment intent."));
     } finally {
       setIntentActionId(null);
     }

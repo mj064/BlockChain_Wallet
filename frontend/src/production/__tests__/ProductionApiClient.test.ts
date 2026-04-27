@@ -91,4 +91,22 @@ describe("createProductionApiClient", () => {
       "Production API request failed with 503",
     );
   });
+
+  it("includes backend detail text in non-OK errors when available", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({ detail: "Payment blocked: daily limit exceeded (500.00 USDC)." }),
+        {
+          status: 409,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
+    );
+
+    const api = createProductionApiClient();
+
+    await expect(api.getPortfolio(OWNER)).rejects.toThrow(
+      "Production API request failed with 409: Payment blocked: daily limit exceeded (500.00 USDC).",
+    );
+  });
 });

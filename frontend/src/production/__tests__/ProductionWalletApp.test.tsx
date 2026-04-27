@@ -365,6 +365,27 @@ describe("ProductionWalletApp", () => {
     expect(screen.getByText(/risk decision: allow/i)).toBeInTheDocument();
   });
 
+  it("shows backend error detail when quote preview fails", async () => {
+    const api = fakeApi();
+    api.quotePaymentIntent = vi.fn(async () => {
+      throw new Error(
+        "Production API request failed with 409: Payment blocked: daily limit exceeded (500.00 USDC).",
+      );
+    });
+
+    render(<ProductionWalletApp apiClient={api} initialWalletAddress={OWNER} />);
+
+    await userEvent.type(await screen.findByLabelText("Recipient address"), RECIPIENT);
+    await userEvent.type(screen.getByLabelText("Amount"), "12.50");
+    await userEvent.click(screen.getByRole("button", { name: /preview quote/i }));
+
+    expect(
+      await screen.findByText(
+        "Production API request failed with 409: Payment blocked: daily limit exceeded (500.00 USDC).",
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("renders settlement activity events with tx and receipt details", async () => {
     render(<ProductionWalletApp apiClient={fakeApi()} initialWalletAddress={OWNER} />);
 

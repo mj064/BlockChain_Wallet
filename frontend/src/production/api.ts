@@ -158,7 +158,39 @@ function walletHeaders(walletAddress: string) {
 
 async function readJson<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    throw new Error(`Production API request failed with ${response.status}`);
+    let detail: string | null = null;
+    const contentType = response.headers.get("Content-Type") ?? "";
+
+    if (contentType.includes("application/json")) {
+      try {
+        const payload = (await response.json()) as {
+          detail?: unknown;
+          message?: unknown;
+        };
+        if (typeof payload.detail === "string" && payload.detail.trim().length > 0) {
+          detail = payload.detail;
+        } else if (
+          typeof payload.message === "string" &&
+          payload.message.trim().length > 0
+        ) {
+          detail = payload.message;
+        }
+      } catch {
+        detail = null;
+      }
+    } else {
+      try {
+        const text = (await response.text()).trim();
+        if (text.length > 0) {
+          detail = text;
+        }
+      } catch {
+        detail = null;
+      }
+    }
+
+    const baseMessage = `Production API request failed with ${response.status}`;
+    throw new Error(detail ? `${baseMessage}: ${detail}` : baseMessage);
   }
   return response.json() as Promise<T>;
 }
