@@ -3,6 +3,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -271,6 +272,130 @@ def test_payment_intent_lifecycle_submit_then_confirm(tmp_path, monkeypatch):
     assert confirmed.json()["receiptUrl"] is not None
 
 
+def test_get_payment_intent_not_found_returns_404(tmp_path, monkeypatch):
+    client = _client(tmp_path, monkeypatch)
+
+    response = client.get(
+        "/api/v1/payment-intents/intent_missing",
+        headers={"X-Wallet-Address": OWNER},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Payment intent not found"
+
+
+def test_submit_and_confirm_intent_not_found_return_404(tmp_path, monkeypatch):
+    client = _client(tmp_path, monkeypatch)
+
+    submit_response = client.post(
+        "/api/v1/payment-intents/intent_missing/submit",
+        headers={"X-Wallet-Address": OWNER},
+    )
+    confirm_response = client.post(
+        "/api/v1/payment-intents/intent_missing/confirm",
+        headers={"X-Wallet-Address": OWNER},
+        json={"confirmations": 1},
+    )
+
+    assert submit_response.status_code == 404
+    assert submit_response.json()["detail"] == "Payment intent not found"
+    assert confirm_response.status_code == 404
+    assert confirm_response.json()["detail"] == "Payment intent not found"
+
+
+def test_submit_payment_intent_rejects_failed_status(tmp_path, monkeypatch):
+    client = _client(tmp_path, monkeypatch)
+
+    created = client.post(
+        "/api/v1/payment-intents",
+        headers={"X-Wallet-Address": OWNER},
+        json={
+            "recipient": RECIPIENT,
+            "amount": "9.00",
+            "chainPreference": "base",
+        },
+    )
+    assert created.status_code == 201
+    intent_id = created.json()["id"]
+
+    from app.production.database import get_session_factory
+    from app.production.models import PaymentIntent
+    from app.production.types import PaymentIntentStatus
+
+    with get_session_factory()() as db:
+        intent = db.scalar(select(PaymentIntent).where(PaymentIntent.id == intent_id))
+        assert intent is not None
+        intent.status = PaymentIntentStatus.failed.value
+        db.commit()
+
+    response = client.post(
+        f"/api/v1/payment-intents/{intent_id}/submit",
+        headers={"X-Wallet-Address": OWNER},
+    )
+
+    assert response.status_code == 409
+    assert "finalized" in response.json()["detail"].lower()
+
+
+def test_confirm_payment_intent_rejects_expired_status(tmp_path, monkeypatch):
+    client = _client(tmp_path, monkeypatch)
+
+    created = client.post(
+        "/api/v1/payment-intents",
+        headers={"X-Wallet-Address": OWNER},
+        json={
+            "recipient": RECIPIENT,
+            "amount": "11.00",
+            "chainPreference": "base",
+        },
+    )
+    assert created.status_code == 201
+    intent_id = created.json()["id"]
+
+    from app.production.database import get_session_factory
+    from app.production.models import PaymentIntent
+    from app.production.types import PaymentIntentStatus
+
+    with get_session_factory()() as db:
+        intent = db.scalar(select(PaymentIntent).where(PaymentIntent.id == intent_id))
+        assert intent is not None
+        intent.status = PaymentIntentStatus.expired.value
+        db.commit()
+
+    response = client.post(
+        f"/api/v1/payment-intents/{intent_id}/confirm",
+        headers={"X-Wallet-Address": OWNER},
+        json={"confirmations": 1},
+    )
+
+    assert response.status_code == 409
+    assert "failed or expired" in response.json()["detail"].lower()
+
+
+def test_confirm_payment_intent_rejects_invalid_confirmation_count(tmp_path, monkeypatch):
+    client = _client(tmp_path, monkeypatch)
+
+    created = client.post(
+        "/api/v1/payment-intents",
+        headers={"X-Wallet-Address": OWNER},
+        json={
+            "recipient": RECIPIENT,
+            "amount": "13.00",
+            "chainPreference": "base",
+        },
+    )
+    assert created.status_code == 201
+    intent_id = created.json()["id"]
+
+    response = client.post(
+        f"/api/v1/payment-intents/{intent_id}/confirm",
+        headers={"X-Wallet-Address": OWNER},
+        json={"confirmations": 0},
+    )
+
+    assert response.status_code == 422
+
+
 def test_activity_feed_includes_transaction_and_receipt_events(tmp_path, monkeypatch):
     client = _client(tmp_path, monkeypatch)
 
@@ -487,3 +612,35 @@ def test_webhook_ingestion_records_alchemy_events(tmp_path, monkeypatch):
 
     assert response.status_code == 202
     assert response.json() == {"accepted": True, "eventId": "evt_123"}
+
+
+def test_webhook_ingestion_is_idempotent_on_event_id(tmp_path, monkeypatch):
+    client = _client(tmp_path, monkeypatch)
+
+    payload = {
+        "eventId": "evt_repeat_1",
+        "type": "MINED_TRANSACTION",
+        "payload": {"hash": "0xabc", "network": "base-mainnet"},
+    }
+
+    first = client.post("/api/v1/webhooks/alchemy", json=payload)
+    second = client.post("/api/v1/webhooks/alchemy", json=payload)
+
+    assert first.status_code == 202
+    assert second.status_code == 202
+    assert first.json() == {"accepted": True, "eventId": "evt_repeat_1"}
+    assert second.json() == {"accepted": True, "eventId": "evt_repeat_1"}
+
+    from app.production.database import get_session_factory
+    from app.production.models import WebhookEvent
+
+    with get_session_factory()() as db:
+        events = list(
+            db.scalars(
+                select(WebhookEvent).where(
+                    WebhookEvent.source == "alchemy",
+                    WebhookEvent.event_id == "evt_repeat_1",
+                )
+            )
+        )
+    assert len(events) == 1
