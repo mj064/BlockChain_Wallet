@@ -12,4 +12,8 @@ dist/
 
 # OS
 .DS_Store
+
+# Local runtime/test artifacts
+backend/production_wallet.db
+frontend/tsconfig.tsbuildinfo
 Thumbs.db
