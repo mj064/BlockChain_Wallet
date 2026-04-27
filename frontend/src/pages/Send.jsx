@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { sendTx } from "../api";
+import { createTx, sendTx } from "../api";
 
 export default function Send() {
   const stored = (() => {
@@ -39,9 +39,8 @@ export default function Send() {
         password: form.password,
         enc_pk: JSON.parse(form.enc_pk),
       };
-      const { createTx, sendTx: broadcast } = await import("../api");
       const txRes = await createTx(payload);
-      await broadcast(txRes.data);
+      await sendTx(txRes.data);
       showAlert(`Successfully sent ${form.amount} BCW!`);
       setForm(p => ({ ...p, to: "", amount: "", password: "" }));
     } catch (e) {
